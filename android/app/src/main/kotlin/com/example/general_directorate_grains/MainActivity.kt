@@ -1,4 +1,4 @@
-package com.auth_login_register_flutter_getx
+package com.example.vijay
 
 import io.flutter.embedding.android.FlutterActivity
 

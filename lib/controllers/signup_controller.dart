@@ -1,162 +1,80 @@
-import 'dart:developer';
-import 'package:flutter/cupertino.dart';
+import 'package:auth_login_register_flutter_getx/repositories/auth_repository.dart';
+import 'package:auth_login_register_flutter_getx/widgets/loader.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import '../config/config_api.dart';
-import '../controllers/auth_controller.dart';
-import '../services/auth_api_service.dart';
+import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class SignupController extends AuthController {
-  final GlobalKey<FormState> signupFormKey =
-      GlobalKey<FormState>(debugLabel: '__signupFormKey__');
-  final usernameController = TextEditingController();
-  final formUsernameFieldKey = GlobalKey<FormFieldState>();
-  final emailController = TextEditingController();
-  final formEmailFieldKey = GlobalKey<FormFieldState>();
-  final passwordController = TextEditingController();
-  final formPasswordFieldKey = GlobalKey<FormFieldState>();
-  final confirmPasswordController = TextEditingController();
-  final formConfirmPasswordFieldKey = GlobalKey<FormFieldState>();
+class SignupController extends GetxController {
+  final AuthRepository _authRepository = AuthRepository();
+  var otpSent = false.obs;
+  var otp = ''.obs;
+  var message = ''.obs;
+  var isSuccess = false.obs;
 
-  FocusNode usernameFocusNode = FocusNode();
-  FocusNode emailFocusNode = FocusNode();
-  FocusNode passwordFocusNode = FocusNode();
-  FocusNode confirmPasswordFocusNode = FocusNode();
 
-  SignupController(AuthApiService authenticationService)
-      : super(authenticationService);
-
-  void onInit() {
-    _addListener();
-    // textFieldFocusNode.hasFocus = false;
-    super.onInit();
+  Future<void> sendOtp(String email) async {
+    try {
+      Loader.show(); // Show loader before starting the API call
+      // Call the API to send OTP
+      final response = await _authRepository.sendOtp(email);
+      otp.value = response['otp'];
+      otpSent.value = true;
+      isSuccess.value = true;
+      message.value = 'OTP sent successfully. OTP: ${otp.value}';
+    } catch (e) {
+      isSuccess.value = false;
+      message.value = 'Failed to send OTP: ${_extractErrorMessage(e)}';
+    } finally {
+      Loader.hide(); // Hide the loader after the API call completes
+    }
   }
 
-  void _addListener() {
-    usernameFocusNode.addListener(() {
-      log('usernameFocusNode-----${usernameFocusNode.hasFocus}');
-      if (!usernameFocusNode.hasFocus) {
-        formUsernameFieldKey.currentState!.validate();
-        // fieldLostFocus = usernameController.hashCode.toString();
+  Future<void> signup(String name, String mobile, String email, String password,
+      String otp) async {
+    try {
+      Loader.show(); // Show loader before starting the API call
+      final response =
+          await _authRepository.signup(name, mobile, email, password, otp);
+
+      if (response['message'] == 'User already exists') {
+        isSuccess.value = false;
+        message.value = 'User already exists. Redirecting to login.';
+        Get.offAllNamed('/login');
+        return;
       }
-    });
-    emailFocusNode.addListener(() {
-      log('emailFocusNode-----${emailFocusNode.hasFocus}');
-      if (!emailFocusNode.hasFocus) {
-        formEmailFieldKey.currentState!.validate();
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setString('token', response['token']);
+      prefs.setString('user_id', response['user']['_id']);
+      prefs.setString('email', response['user']['email']);
+      prefs.setBool('isVerified', response['user']['isVerified']);
+
+      isSuccess.value = true;
+      message.value = 'Signup successful! Redirecting to homepage.';
+      Get.offAllNamed('/homepage'); // Navigate to homepage
+    } catch (e) {
+      isSuccess.value = false;
+      if(e.toString().contains("409")){
+        message.value = 'User already exists';
+      }else{
+        message.value = _extractErrorMessage(e);
       }
-    });
-    passwordFocusNode.addListener(() {
-      if (!passwordFocusNode.hasFocus) {
-        formPasswordFieldKey.currentState!.validate();
-      }
-    });
-    confirmPasswordFocusNode.addListener(() {
-      if (!confirmPasswordFocusNode.hasFocus) {
-        formConfirmPasswordFieldKey.currentState!.validate();
-      }
-    });
+    } finally {
+      Loader.hide();
+    }
   }
 
-  @override
-  void onClose() {
-    usernameController.dispose();
-    usernameFocusNode.dispose();
-    emailController.dispose();
-    emailFocusNode.dispose();
-    passwordController.dispose();
-    passwordFocusNode.dispose();
-    confirmPasswordController.dispose();
-    confirmPasswordFocusNode.dispose();
-
-    super.onClose();
-  }
-
-  String? usernameValidator(String? value) {
-    // if(fieldLostFocus == usernameController.hashCode)
-    log('usernameValidator-----');
-    if (value == null || value.trim().isEmpty) {
-      return 'This field is required';
-    }
-    if (value.trim().length < 4) {
-      return 'Username must be at least 4 characters in length';
-    }
-    // Return null if the entered username is valid
-    return null;
-  }
-
-  String? emailValidator(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Please enter your email address';
-    }
-    // Check if the entered email has the right format
-    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-      return 'Please enter a valid email address';
-    }
-    // Return null if the entered email is valid
-    return null;
-  }
-
-  String? passwordValidator(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'This field is required';
-    }
-    if (value.trim().length < 3) {
-      return 'Password must be at least 8 characters in length';
-    }
-    // Return null if the entered password is valid
-    return null;
-  }
-
-  String? confirmPasswordValidator(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'This field is required';
-    }
-    log('${value}--${passwordController.value.text}');
-    if (value != passwordController.value.text) {
-      return 'Confimation password does not match the entered password';
-    }
-
-    return null;
-  }
-
-  String? validator(String? value) {
-    log('validatoooor');
-
-    if (value != null && value.isEmpty) {
-      return 'Please this field must be filled';
-    }
-    return null;
-  }
-
-  Future<void> signup() async {
-    // log('${emailController.text}, ${passwordController.text}');
-    if (signupFormKey.currentState!.validate()) {
-      try {
-        var data = <String, String>{
-          'username': usernameController.text,
-          'email': emailController.text,
-        };
-        if (ConfigAPI.loginWithPassword) {
-          data = {
-            ...data,
-            'password': passwordController.text,
-            'confirmPassword': confirmPasswordController.text,
-          };
+  String _extractErrorMessage(dynamic error) {
+    if (error is DioException) {
+      if (error.response != null) {
+        if (error.response?.statusCode == 409) {
+          return 'User already exists';
         }
-        await signUp(data);
-        if (ConfigAPI.loginWithPassword) {
-          signIn(usernameController.text, passwordController.text);
-        }
-      } catch (err, _) {
-        // message = 'There is an issue with the app during request the data, '
-        //         'please contact admin for fixing the issues ' +
-
-        passwordController.clear();
-        confirmPasswordController.clear();
-        rethrow;
+        return error.response?.data['message'] ?? 'An unexpected error occurred.';
+      } else {
+        return 'Network error: ${error.message}';
       }
-    } else {
-      throw Exception('An error occurred, invalid inputs value');
     }
+    return error.toString();
   }
 }

@@ -1,10 +1,12 @@
+import 'package:auth_login_register_flutter_getx/controllers/homepage_controller.dart';
 import 'package:get/get.dart';
 
-import '../controllers/home_controller.dart';
 
-class HomeBinding extends Bindings {
+class HomepageBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<HomeController>(() => HomeController());
+    // Initialize HomepageController when Homepage screen is loaded
+    Get.lazyPut<HomepageController>(() => HomepageController());
   }
 }
+

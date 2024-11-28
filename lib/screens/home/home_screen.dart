@@ -1,123 +1,150 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:carousel_slider/carousel_slider.dart'; // Using carousel_slider package
 
-import '../../controllers/auth_controller.dart';
-import '../../controllers/home_controller.dart';
-import '../../routes/app_pages.dart';
+class HomepageScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, String>> carouselItems = [
+      {'image': 'assets/slider_image_1.png', 'title': 'Innovative Technology'},
+      {'image': 'assets/slider_image_2.png', 'title': 'Beautiful Nature'},
+      {'image': 'assets/slider_image_3.png', 'title': 'Amazing Architecture'},
+    ];
 
-class HomeScreen extends GetView<HomeController> {
-  const HomeScreen({Key? key}) : super(key: key);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Homepage'),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Carousel Slider
+              CarouselSlider(
+                items: carouselItems.map((item) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        item['image']!,
+                        fit: BoxFit.cover,
+                        height: 150, // Adjust height as needed
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        item['title']!,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  );
+                }).toList(),
+                options: CarouselOptions(
+                  height: 230.0, // Adjusted height for the carousel slider
+                  autoPlay: true,
+                  enlargeCenterPage: true,
+                  viewportFraction: 0.8,
+                ),
+              ),
+              const SizedBox(height: 100),
+              // Card with Image and Button
+              Card(
+                margin: const EdgeInsets.only(bottom: 20),
+                child: Column(
+                  children: [
+                    CardItem(
+                      title: 'Sample Product',
+                      subtitle: 'View Details',
+                      onTap: () {
+                        Get.to(() => PlaceholderScreen());
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
+// Placeholder screen for the button navigation
+class PlaceholderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Get.find<AuthController>().signOut();
-                Get.offAllNamed(Routes.LOGIN);
-              },
-              child:
-                  const Text("Signout", style: TextStyle(color: Colors.white)),
-            )
-          ],
-          // leadingWidth: double.infinity,
-          title: const Text(
-            'Auth Login Register Flutter Getx',
-            style: TextStyle(fontWeight: FontWeight.normal, fontSize: 28),
+      appBar: AppBar(title: const Text('Details Screen')),
+      body: const Center(
+        child: Text(
+          'Details go here',
+          style: TextStyle(fontSize: 18),
+        ),
+      ),
+    );
+  }
+}
+
+class CardItem extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const CardItem({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style:
+                          const TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Arrow Icon
+              const Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: Icon(Icons.arrow_forward_ios, color: Colors.black54),
+              ),
+            ],
           ),
         ),
-        body: Obx(
-          () {
-            return SingleChildScrollView(
-                child: Container(
-                    padding: EdgeInsets.all(10),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: const [
-                            Icon(Icons.timer_sharp),
-                            Text(
-                              'The session expired in:',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        Container(
-                          child: Text(controller.sessionTime.value),
-                        ),
-                        const SizedBox(
-                          height: 50,
-                        ),
-                        Container(
-                            padding: const EdgeInsets.all(10),
-                            child: const Text(
-                              'Credentials:',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            )),
-                        ListTile(
-                            leading: const Text(
-                              'Access token',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            title:
-                                Text(controller.credentails.value.accessToken)),
-                        ListTile(
-                            leading: const Text(
-                              'Refresh token',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            title: Text(
-                                controller.credentails.value.refreshToken!)),
-                        ListTile(
-                            leading: const Text(
-                              'CanRefresh',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            title: Text(controller.credentails.value.canRefresh
-                                .toString())),
-                        ListTile(
-                            leading: const Text(
-                              'Expiration',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            title: Text(controller.credentails.value.expiration
-                                .toString())),
-                        ListTile(
-                            leading: const Text(
-                              'idToken',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            title: Text(controller.credentails.value.idToken
-                                .toString())),
-                        ListTile(
-                            leading: const Text(
-                              'isExpired',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            title: Text(controller.credentails.value.isExpired
-                                .toString())),
-                        ListTile(
-                            leading: const Text(
-                              'tokenEndPoint',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            title: Text(controller
-                                .credentails.value.tokenEndpoint
-                                .toString())),
-                        ListTile(
-                            leading: const Text(
-                              'Scopes',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            title: Text(controller.credentails.value.scopes
-                                .toString())),
-                      ],
-                    )));
-          },
-        ));
+      ),
+    );
   }
 }

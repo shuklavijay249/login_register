@@ -1,43 +1,38 @@
-import 'dart:developer';
-
+import 'package:auth_login_register_flutter_getx/routes/app_routes.dart';
+import 'package:auth_login_register_flutter_getx/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../routes/app_pages.dart';
-import '../services/auth_api_service.dart';
-import 'bindings/app_binding.dart';
-import 'controllers/auth_controller.dart';
-
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeApp();
-  runApp(const MyApp());
+  ApiService.init(); // Initialize Dio client
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  Future<String> getInitialRoute() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    return token != null ? AppRoutes.homepage : AppRoutes.signup;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: 'Auth login Register with Flutter Getx',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      // locale: LocalizationService.locale,
-      // fallbackLocale: LocalizationService.fallbackLocale,
-      // translations: LocalizationService(),
-      initialRoute: Routes.HOME,
-      initialBinding: AppBinding(),
-      getPages: AppPages.pages,
+    return FutureBuilder<String>(
+      future: getInitialRoute(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const MaterialApp(
+              home: Scaffold(body: Center(child: CircularProgressIndicator())));
+        }
+        return GetMaterialApp(
+          debugShowCheckedModeBanner: false,
+          initialRoute: snapshot.data ?? AppRoutes.signup,
+          getPages: AppRoutes.routes,
+        );
+      },
     );
   }
-}
-
-Future<void> initializeApp() async {
-  AuthApiService authApiService = Get.put(AuthApiService());
-  await authApiService.initCredentials();
-  Get.put(AuthController(authApiService), permanent: true);
-  log('Initialize');
 }

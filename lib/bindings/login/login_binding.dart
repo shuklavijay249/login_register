@@ -1,12 +1,11 @@
 import 'package:get/get.dart';
-
-import '../../controllers/login/login_controller.dart';
-import '../../services/auth_api_service.dart';
+import '../../controllers/login_controller.dart';
 
 class LoginBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<LoginController>(
-        () => LoginController(Get.find<AuthApiService>()));
+    // Initialize LoginController when Login screen is loaded
+    Get.lazyPut<LoginController>(() => LoginController());
   }
 }
+
